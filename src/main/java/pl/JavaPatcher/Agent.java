@@ -4,13 +4,13 @@ import org.objectweb.asm.*;
 import pl.JavaPatcher.annotations.Patch;
 import pl.JavaPatcher.annotations.Postfix;
 import pl.JavaPatcher.annotations.Prefix;
-import pl.JavaPatcherExample.MainPatch;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Agent {
@@ -53,14 +53,20 @@ public class Agent {
                 List<Method> prefixes = new ArrayList<>();
                 List<Method> postfixes = new ArrayList<>();
 
+                Type returnType = Type.getReturnType(descriptor);
+
                 for(Method method : patcher.getClass().getMethods()) {
                     if(method.isAnnotationPresent(Prefix.class)) {
-                        if(method.getAnnotation(Prefix.class).value().equals(name)) {
+                        Prefix prefix = method.getAnnotation(Prefix.class);
+                        if(prefix.value().equals(name) && descriptor.equals(Type.getMethodDescriptor(returnType,
+                                Arrays.stream(prefix.arguments()).map(Type::getType).toArray(Type[]::new)))) {
                             prefixes.add(method);
                         }
                     }
                     if(method.isAnnotationPresent(Postfix.class)) {
-                        if(method.getAnnotation(Postfix.class).value().equals(name)) {
+                        Postfix postfix = method.getAnnotation(Postfix.class);
+                        if(postfix.value().equals(name) && descriptor.equals(Type.getMethodDescriptor(returnType,
+                                Arrays.stream(postfix.arguments()).map(Type::getType).toArray(Type[]::new)))) {
                             postfixes.add(method);
                         }
                     }
