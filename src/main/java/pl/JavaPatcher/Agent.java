@@ -17,7 +17,7 @@ public class Agent {
     private static final List<Object> patchers = new ArrayList<>();
 
     public static void premain(String agentArgs, Instrumentation inst) {
-        PatcherScanner.scanForPatchers(agentArgs);
+        PatcherScanner.scanForPatchers(agentArgs, inst);
         System.out.println("-- JavaPatcher active. Total of (" + patchers.size() + ") patchers.");
 
         inst.addTransformer(new ClassFileTransformer() {

@@ -4,19 +4,22 @@ import pl.JavaPatcher.annotations.Patch;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.lang.instrument.Instrumentation;
 import java.net.URL;
 import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 
 public class PatcherScanner {
 
-    public static void scanForPatchers(String additionalJar) {
+    public static void scanForPatchers(String additionalJar, Instrumentation instrumentation) {
         System.out.println("- Scanning for patchers...");
 
         try {
             if(additionalJar != null) {
                 System.out.println("- Scanning additional JAR: " + additionalJar);
                 File additionalJarFile = new File(additionalJar);
+                instrumentation.appendToSystemClassLoaderSearch(new JarFile(additionalJar));
                 scanJarFile(additionalJarFile);
             } else {
                 System.out.println("- Scanning self...");
