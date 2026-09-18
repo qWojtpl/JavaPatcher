@@ -39,7 +39,7 @@ public class PatchVisitor extends MethodVisitor {
         String ownerClass = method.getDeclaringClass().getName().replace('.', '/');
         String methodName = method.getName();
         if(method.getParameterCount() > 0 && Object.class.equals(method.getParameterTypes()[0])) {
-            System.out.println("-- Patch with instance for: " + methodName);
+            System.out.println("---- Patch with instance for: " + methodName);
             super.visitVarInsn(Opcodes.ALOAD, 0);
             super.visitMethodInsn(
                     Opcodes.INVOKESTATIC,

@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
 public @interface Postfix {
 
     String value();
-    Class<?>[] arguments()  default {};
+    String[] arguments()  default {};
 
 }

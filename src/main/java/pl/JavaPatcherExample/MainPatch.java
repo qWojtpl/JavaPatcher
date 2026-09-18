@@ -7,27 +7,19 @@ import pl.JavaPatcher.annotations.Prefix;
 @Patch("pl.JavaPatcherExample.MainClass")
 public class MainPatch {
 
-    @Prefix(value = "main", arguments = { String[].class })
+    @Prefix(value = "main", arguments = { "java.lang.String[]" })
     public static void mainPrefix() {
         System.out.println("MAIN PREFIX");
     }
 
-    @Postfix(value = "main", arguments = { String[].class })
+    @Postfix(value = "main", arguments = { "java.lang.String[]" })
     public static void mainPostfix() {
         System.out.println("MAIN POSTFIX");
     }
 
-    @Prefix("example")
-    public static boolean examplePrefix(Object instance) {
+    @Prefix(value = "example", arguments = { "java.lang.String[][]" })
+    public static void examplePrefix(Object instance) {
         System.out.println("EXAMPLE PREFIX");
-        return ((MainClass) instance).test == 1;
-    }
-
-
-    @Postfix("example")
-    public static void examplePostfix(Object instance) {
-        System.out.println("EXAMPLE POSTFIX");
-        System.out.println(((MainClass) instance).test);
     }
 
 }

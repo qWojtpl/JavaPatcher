@@ -26,12 +26,12 @@ public class Agent {
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
                 for(Object patcher : patchers) {
                     if(!patcher.getClass().isAnnotationPresent(Patch.class)) {
-                        System.out.println("-X- Patcher not annotated with Patch annotation: " + patcher.getClass().getCanonicalName());
-                        return classfileBuffer;
+                        System.out.println("--- Patcher not annotated with Patch annotation: " + patcher.getClass().getCanonicalName());
+                        continue;
                     }
                     Patch patch = patcher.getClass().getAnnotation(Patch.class);
                     if(patch.value().replace(".", "/").equals(className)) {
-                        System.out.println("-- Patching class " + className + " with patcher " + patcher.getClass().getCanonicalName());
+                        System.out.println("--- Patching class " + className + " with patcher " + patcher.getClass().getCanonicalName());
                         return patchClass(classfileBuffer, patcher);
                     }
                 }
@@ -53,21 +53,73 @@ public class Agent {
                 List<Method> prefixes = new ArrayList<>();
                 List<Method> postfixes = new ArrayList<>();
 
-                Type returnType = Type.getReturnType(descriptor);
-
                 for(Method method : patcher.getClass().getMethods()) {
+                    List<String> values = new ArrayList<>();
+                    List<String[]> arguments = new ArrayList<>();
+                    List<Boolean> isPrefix = new ArrayList<>();
                     if(method.isAnnotationPresent(Prefix.class)) {
                         Prefix prefix = method.getAnnotation(Prefix.class);
-                        if(prefix.value().equals(name) && descriptor.equals(Type.getMethodDescriptor(returnType,
-                                Arrays.stream(prefix.arguments()).map(Type::getType).toArray(Type[]::new)))) {
-                            prefixes.add(method);
-                        }
+                        values.add(prefix.value());
+                        arguments.add(prefix.arguments());
+                        isPrefix.add(true);
                     }
                     if(method.isAnnotationPresent(Postfix.class)) {
-                        Postfix postfix = method.getAnnotation(Postfix.class);
-                        if(postfix.value().equals(name) && descriptor.equals(Type.getMethodDescriptor(returnType,
-                                Arrays.stream(postfix.arguments()).map(Type::getType).toArray(Type[]::new)))) {
-                            postfixes.add(method);
+                        Postfix prefix = method.getAnnotation(Postfix.class);
+                        values.add(prefix.value());
+                        arguments.add(prefix.arguments());
+                        isPrefix.add(false);
+                    }
+                    for(int j = 0; j < values.size(); j++) {
+                        if(values.get(j).equals(name)) {
+                            StringBuilder argumentDescriptor = new StringBuilder("(");
+                            for(int i = 0; i < arguments.get(j).length; i++) {
+                                String argument = arguments.get(j)[i];
+                                if(argument.endsWith("[]")) {
+                                    while(argument.contains("[]")) {
+                                        argumentDescriptor.append("[");
+                                        argument = argument.replaceFirst("\\[]", "");
+                                    }
+                                }
+                                if(argument.equalsIgnoreCase("boolean")) {
+                                    argumentDescriptor.append("Z");
+                                    continue;
+                                } else if(argument.equalsIgnoreCase("byte")) {
+                                    argumentDescriptor.append("B");
+                                    continue;
+                                } else if(argument.equalsIgnoreCase("char")) {
+                                    argumentDescriptor.append("C");
+                                    continue;
+                                } else if(argument.equalsIgnoreCase("double")) {
+                                    argumentDescriptor.append("D");
+                                    continue;
+                                }  else if(argument.equalsIgnoreCase("float")) {
+                                    argumentDescriptor.append("F");
+                                    continue;
+                                } else if(argument.equalsIgnoreCase("int")) {
+                                    argumentDescriptor.append("I");
+                                    continue;
+                                } else if(argument.equalsIgnoreCase("long")) {
+                                    argumentDescriptor.append("J");
+                                    continue;
+                                }  else if(argument.equalsIgnoreCase("short")) {
+                                    argumentDescriptor.append("S");
+                                    continue;
+                                } else {
+                                    argumentDescriptor.append("L");
+                                }
+                                argumentDescriptor.append(argument.replace(".", "/")).append(";");
+                            }
+                            /*System.out.println("DESCRIPTOR: " + descriptor);
+                            System.out.println("ARGUMENT DESCRIPTOR: " + argumentDescriptor);
+                            System.out.println("CHECK: "+ descriptor.split("\\)")[0] + " == " + argumentDescriptor);
+                            */
+                            if(descriptor.split("\\)")[0].contentEquals(argumentDescriptor)) {
+                                if(isPrefix.get(j)) {
+                                    prefixes.add(method);
+                                } else {
+                                    postfixes.add(method);
+                                }
+                            }
                         }
                     }
                 }

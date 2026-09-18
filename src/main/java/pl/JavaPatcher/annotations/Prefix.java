@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
 public @interface Prefix {
 
     String value();
-    Class<?>[] arguments()  default {};
+    String[] arguments()  default {};
 
 }

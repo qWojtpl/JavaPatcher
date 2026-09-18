@@ -11,7 +11,7 @@ import java.util.jar.JarInputStream;
 public class PatcherScanner {
 
     public static void scanForPatchers() {
-        System.out.println("-- Scanning for patchers...");
+        System.out.println("- Scanning for patchers...");
 
         try {
             URL jarUrl = PatcherScanner.class.getProtectionDomain().getCodeSource().getLocation();
