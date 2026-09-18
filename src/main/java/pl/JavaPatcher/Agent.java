@@ -10,7 +10,6 @@ import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class Agent {
@@ -18,7 +17,7 @@ public class Agent {
     private static final List<Object> patchers = new ArrayList<>();
 
     public static void premain(String agentArgs, Instrumentation inst) {
-        PatcherScanner.scanForPatchers();
+        PatcherScanner.scanForPatchers(agentArgs);
         System.out.println("-- JavaPatcher active. Total of (" + patchers.size() + ") patchers.");
 
         inst.addTransformer(new ClassFileTransformer() {

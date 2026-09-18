@@ -10,25 +10,40 @@ import java.util.jar.JarInputStream;
 
 public class PatcherScanner {
 
-    public static void scanForPatchers() {
+    public static void scanForPatchers(String additionalJar) {
         System.out.println("- Scanning for patchers...");
 
         try {
-            URL jarUrl = PatcherScanner.class.getProtectionDomain().getCodeSource().getLocation();
-            File jarFile = new File(jarUrl.toURI());
-
-            if (jarFile.isDirectory()) {
-                scanJarDirectory(jarFile, "");
+            if(additionalJar != null) {
+                System.out.println("- Scanning additional JAR: " + additionalJar);
+                File additionalJarFile = new File(additionalJar);
+                scanJarFile(additionalJarFile);
             } else {
-                scanJarFile(jarFile);
+                System.out.println("- Scanning self...");
+                URL jarUrl = PatcherScanner.class.getProtectionDomain().getCodeSource().getLocation();
+                File jarFile = new File(jarUrl.toURI());
+
+                if(jarFile.isDirectory()) {
+                    scanClassDirectory(jarFile, "");
+                } else {
+                    scanJarFile(jarFile);
+                }
             }
+
         } catch(Exception ignored) {}
     }
 
-    private static void scanJarDirectory(File directory, String path) {
-        for(File file : directory.listFiles()) {
+    private static void scanClassDirectory(File directory, String path) {
+
+        File[] files = directory.listFiles();
+
+        if(files == null) {
+            return;
+        }
+
+        for(File file : files) {
             if(file.isDirectory()) {
-                scanJarDirectory(file, path + file.getName() + ".");
+                scanClassDirectory(file, path + file.getName() + ".");
             } else if(file.getName().endsWith(".class")) {
                 checkAndRegister(path + file.getName().substring(0, file.getName().length() - 6));
             }
