@@ -1,12 +1,11 @@
-package pl.JavaPatcher.example;
+package pl.JavaPatcherExample;
 
-import pl.JavaPatcher.Patcher;
 import pl.JavaPatcher.annotations.Patch;
 import pl.JavaPatcher.annotations.Postfix;
 import pl.JavaPatcher.annotations.Prefix;
 
-@Patch("pl.JavaPatcher.example.MainClass")
-public class MainPatch extends Patcher {
+@Patch("pl.JavaPatcherExample.MainClass")
+public class MainPatch {
 
     @Prefix("main")
     public static void mainPrefix() {
@@ -16,6 +15,11 @@ public class MainPatch extends Patcher {
     @Postfix("main")
     public static void mainPostfix() {
         System.out.println("MAIN POSTFIX");
+    }
+
+    @Postfix("example")
+    public static void examplePostfix(Object instance) {
+        System.out.println(((MainClass) instance).test);
     }
 
 }

@@ -4,11 +4,10 @@ import org.objectweb.asm.*;
 import pl.JavaPatcher.annotations.Patch;
 import pl.JavaPatcher.annotations.Postfix;
 import pl.JavaPatcher.annotations.Prefix;
-import pl.JavaPatcher.example.MainPatch;
+import pl.JavaPatcherExample.MainPatch;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -16,15 +15,16 @@ import java.util.List;
 
 public class Agent {
 
-    private static final List<Patcher> patchers = new ArrayList<>();
+    private static final List<Object> patchers = new ArrayList<>();
 
     public static void premain(String agentArgs, Instrumentation inst) {
-        patchers.add(new MainPatch());
+        PatcherScanner.scanForPatchers();
         System.out.println("-- JavaPatcher active. Total of (" + patchers.size() + ") patchers.");
+
         inst.addTransformer(new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
-                for(Patcher patcher : patchers) {
+                for(Object patcher : patchers) {
                     if(!patcher.getClass().isAnnotationPresent(Patch.class)) {
                         System.out.println("-X- Patcher not annotated with Patch annotation: " + patcher.getClass().getCanonicalName());
                         return classfileBuffer;
@@ -40,11 +40,12 @@ public class Agent {
         });
     }
 
-    private static byte[] patchClass(byte[] originalBytes, Patcher patcher) {
+    private static byte[] patchClass(byte[] originalBytes, Object patcher) {
         ClassReader reader = new ClassReader(originalBytes);
         ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
 
         ClassVisitor visitor = new ClassVisitor(Opcodes.ASM9, writer) {
+
             @Override
             public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
                 MethodVisitor methodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
@@ -69,42 +70,7 @@ public class Agent {
                     return methodVisitor;
                 }
 
-                return new MethodVisitor(Opcodes.ASM9, methodVisitor) {
-
-                    @Override
-                    public void visitCode() {
-                        super.visitCode();
-                        for(Method prefix : prefixes) {
-                            String ownerClass = prefix.getDeclaringClass().getName().replace('.', '/');
-                            String methodName = prefix.getName();
-                            super.visitMethodInsn(
-                                    Opcodes.INVOKESTATIC,
-                                    ownerClass,
-                                    methodName,
-                                    "()V",
-                                    false
-                            );
-                        }
-                    }
-
-                    @Override
-                    public void visitInsn(int opcode) {
-                        if(opcode >= 172 && opcode <= 177) {
-                            for(Method postfix : postfixes) {
-                                String ownerClass = postfix.getDeclaringClass().getName().replace('.', '/');
-                                String methodName = postfix.getName();
-                                super.visitMethodInsn(
-                                        Opcodes.INVOKESTATIC,
-                                        ownerClass,
-                                        methodName,
-                                        "()V",
-                                        false
-                                );
-                            }
-                        }
-                        super.visitInsn(opcode);
-                    }
-                };
+                return new PatchVisitor(Opcodes.ASM9, methodVisitor, prefixes, postfixes);
             }
         };
 
@@ -112,8 +78,8 @@ public class Agent {
         return writer.toByteArray();
     }
 
-    public static void registerPatcher(Class<? extends Patcher> patcher) throws Exception {
-        patchers.add((Patcher) patcher.getConstructors()[0].newInstance());
+    public static void registerPatcher(Object patcher) {
+        patchers.add(patcher);
     }
 
 }
